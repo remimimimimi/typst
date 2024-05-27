@@ -83,6 +83,7 @@ impl LayoutRoot for Packed<DocumentElem> {
         let mut iter = children.iter().peekable();
 
         while let Some(mut child) = iter.next() {
+            dbg!(child.elem());
             let outer = styles;
             let mut styles = styles;
             if let Some(styled) = child.to_packed::<StyledElem>() {
@@ -104,6 +105,8 @@ impl LayoutRoot for Packed<DocumentElem> {
                 bail!(child.span(), "unexpected document child");
             }
         }
+
+        engine.tracer.value(Value::None, Some(styles.to_map()));
 
         Ok(Document {
             pages,

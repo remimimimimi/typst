@@ -32,7 +32,9 @@ pub fn query(command: &QueryCommand) -> StrResult<()> {
 
     let mut tracer = Tracer::new();
     let result = typst::compile(&world, &mut tracer);
-    let warnings = tracer.warnings();
+    // let warnings = tracer.warnings();
+
+    let styles = tracer.values().first().unwrap().1.clone().unwrap();
 
     match result {
         // Retrieve and print query results.
@@ -53,9 +55,12 @@ pub fn query(command: &QueryCommand) -> StrResult<()> {
                 locator: &mut locator,
                 introspector: document.introspector.track_with(&constraint), // &world.main(),
             };
+
             let new_doc = first_match
-                .layout_root(&mut engine, StyleChain::new(&Styles::new()))
+                .layout_root(&mut engine, StyleChain::new(&styles))
                 .unwrap();
+
+            // tracer.inspect(first_match.span());
 
             let first_frame = &new_doc.pages.first().unwrap().frame;
             let output_path = PathBuf::from("./output.svg");
@@ -63,20 +68,20 @@ pub fn query(command: &QueryCommand) -> StrResult<()> {
             std::fs::write(output_path, svg).unwrap();
 
             // println!("{serialized}");
-            print_diagnostics(&world, &[], &warnings, command.common.diagnostic_format)
-                .map_err(|err| eco_format!("failed to print diagnostics ({err})"))?;
+            // print_diagnostics(&world, &[], &warnings, command.common.diagnostic_format)
+            //     .map_err(|err| eco_format!("failed to print diagnostics ({err})"))?;
         }
 
         // Print diagnostics.
         Err(errors) => {
             set_failed();
-            print_diagnostics(
-                &world,
-                &errors,
-                &warnings,
-                command.common.diagnostic_format,
-            )
-            .map_err(|err| eco_format!("failed to print diagnostics ({err})"))?;
+            // print_diagnostics(
+            //     &world,
+            //     &errors,
+            //     &warnings,
+            //     command.common.diagnostic_format,
+            // )
+            // .map_err(|err| eco_format!("failed to print diagnostics ({err})"))?;
         }
     }
 
