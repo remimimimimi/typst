@@ -19,7 +19,8 @@ use std::mem;
 use crate::diag::{bail, SourceResult};
 use crate::engine::{Engine, Route};
 use crate::foundations::{
-    Content, NativeElement, Packed, SequenceElem, StyleChain, StyledElem, Styles,
+    Content, NativeElement, Packed, SequenceElem, Str, StyleChain, StyledElem, Styles,
+    Value,
 };
 use crate::introspection::TagElem;
 use crate::layout::{
@@ -108,6 +109,17 @@ impl<'a, 'v, 't> Builder<'a, 'v, 't> {
         }
 
         if let Some(realized) = process(self.engine, content, styles)? {
+            if let Some(id) = content.span().id() {
+                if self.engine.tracer.inspected(id) == Some(content.span()) {
+                    self.engine.tracer.value(
+                        Value::Str(Str::from(
+                            "this_is_the_style_of_item_we_tried_to_find",
+                        )),
+                        styles.to_map().into(),
+                    );
+                }
+            }
+
             self.engine.route.increase();
             if !self.engine.route.within(Route::MAX_SHOW_RULE_DEPTH) {
                 bail!(
