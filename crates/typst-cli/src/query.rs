@@ -1,17 +1,9 @@
-use std::path::PathBuf;
-
-use comemo::{Track, Validate};
-// use comemo::{Tracked, Validate};
+use comemo::Track;
 use ecow::{eco_format, EcoString};
 use serde::Serialize;
 use typst::diag::{bail, StrResult};
-use typst::engine::{Engine, Route};
 use typst::eval::{eval_string, EvalMode, Tracer};
-use typst::foundations::{
-    Content, IntoValue, LocatableSelector, Scope, StyleChain, Styles,
-};
-use typst::introspection::{Introspector, Locator};
-use typst::layout::LayoutRoot;
+use typst::foundations::{Content, IntoValue, LocatableSelector, Scope};
 use typst::model::Document;
 use typst::syntax::Span;
 use typst::World;
@@ -27,7 +19,6 @@ pub fn query(command: &QueryCommand) -> StrResult<()> {
 
     // Reset everything and ensure that the main file is present.
     world.reset();
-
     world.source(world.main()).map_err(|err| err.to_string())?;
 
     let mut tracer = Tracer::new();
@@ -37,32 +28,9 @@ pub fn query(command: &QueryCommand) -> StrResult<()> {
     match result {
         // Retrieve and print query results.
         Ok(document) => {
-            let data: Vec<Content> = retrieve(&world, command, &document)?;
-            // let serialized = format(data, command)?;
-
-            let first_match = data.first().unwrap();
-            let world_dyn: &dyn World = &world;
-            let trackable_world = world_dyn.track();
-            let constraint = <Introspector as Validate>::Constraint::new();
-            let mut tracer = Tracer::new();
-            let mut locator = Locator::new();
-            let mut engine = Engine {
-                world: trackable_world,
-                route: Route::default(),
-                tracer: tracer.track_mut(),
-                locator: &mut locator,
-                introspector: document.introspector.track_with(&constraint), // &world.main(),
-            };
-            let new_doc = first_match
-                .layout_root(&mut engine, StyleChain::new(&Styles::new()))
-                .unwrap();
-
-            let first_frame = &new_doc.pages.first().unwrap().frame;
-            let output_path = PathBuf::from("./output.svg");
-            let svg = typst_svg::svg(first_frame);
-            std::fs::write(output_path, svg).unwrap();
-
-            // println!("{serialized}");
+            let data = retrieve(&world, command, &document)?;
+            let serialized = format(data, command)?;
+            println!("{serialized}");
             print_diagnostics(&world, &[], &warnings, command.common.diagnostic_format)
                 .map_err(|err| eco_format!("failed to print diagnostics ({err})"))?;
         }
@@ -122,8 +90,8 @@ fn format(elements: Vec<Content>, command: &QueryCommand) -> StrResult<String> {
     let mapped: Vec<_> = elements
         .into_iter()
         .filter_map(|c| match &command.field {
-            Some(field) => dbg!(c).get_by_name(field),
-            _ => Some(dbg!(c).into_value()),
+            Some(field) => c.get_by_name(field),
+            _ => Some(c.into_value()),
         })
         .collect();
 
