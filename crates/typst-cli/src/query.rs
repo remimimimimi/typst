@@ -46,7 +46,7 @@ pub fn query(command: &QueryCommand) -> StrResult<()> {
             // NOTE: Should be okay to unwrap as we already processed the same input and it compiled.
             typst::compile(&world, &mut tracer).unwrap();
 
-            let values = dbg!(tracer.values());
+            let values = tracer.values();
             let target_value =
                 Value::Str(Str::from("this_is_the_style_of_item_we_tried_to_find"));
             let styles = values
@@ -68,6 +68,11 @@ pub fn query(command: &QueryCommand) -> StrResult<()> {
             let constraint = <Introspector as Validate>::Constraint::new();
             let mut tracer = Tracer::new();
             let mut locator = Locator::new();
+            document
+                .pages
+                .iter()
+                .map(|p| &p.frame)
+                .for_each(|f| locator.visit_frame(f));
             let mut engine = Engine {
                 world: trackable_world,
                 route: Route::default(),
